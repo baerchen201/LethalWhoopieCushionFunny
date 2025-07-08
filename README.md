@@ -1,3 +1,15 @@
-## Warning: This mod is still in development
+## Funny configs:
 
-It has been uploaded to thunderstore to test multiplayer behaviour and might not function correctly yet
+### Time bomb:
+
+ - Delay: anything above 60 seconds
+ - Action: Explode
+ - ActionNoDelay: PlaySound
+ - Position: FollorTrigger
+
+### Landmine:
+
+ - Delay: 0
+ - Action: PlaySoundAndExplodeAndVanish
+ - Position: TriggerPosition
+
