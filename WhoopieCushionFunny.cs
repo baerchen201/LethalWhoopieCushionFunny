@@ -20,6 +20,8 @@ public class WhoopieCushionFunny : BaseUnityPlugin
 
     private SyncedEntry<bool> enable = null!;
     public bool Enable => enable.Value;
+    private SyncedEntry<bool> allowDeathInOrbit = null!;
+    public bool AllowDeathInOrbit => allowDeathInOrbit.Value;
     private SyncedEntry<float> delay = null!;
     public float? Delay => delay.Value > 0f ? delay.Value : null;
     private SyncedEntry<ModAction> action = null!;
@@ -62,6 +64,12 @@ public class WhoopieCushionFunny : BaseUnityPlugin
         Instance = this;
 
         enable = Config.BindSyncedEntry("General", "Enable", false, "Enables or disables the mod");
+        allowDeathInOrbit = Config.BindSyncedEntry(
+            "Settings",
+            "AllowDeathInOrbit",
+            true,
+            "If true, whoopie cushion explosions kill you even in space"
+        );
         delay = Config.BindSyncedEntry(
             "Settings",
             "Delay",
@@ -222,7 +230,10 @@ public class WhoopieCushionFunny : BaseUnityPlugin
                 or ModAction.Explode
                 or ModAction.ExplodeAndVanish
         )
-            Landmine.SpawnExplosion(worldPosition, true, 5.7f, 6f);
+            Landmine.SpawnExplosion(worldPosition, isExploding = true, 5.7f, 6f);
+        isExploding = false;
+        if (GameNetworkManager.Instance.isHostingGame)
+            StartOfRound.Instance.StartGameServerRpc();
 
         if (
             action
@@ -305,14 +316,18 @@ public class WhoopieCushionFunny : BaseUnityPlugin
         Destroy(cleanUp);
     }
 
+    internal static bool isExploding = false;
+
     [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.AllowPlayerDeath))]
-    internal class DoubleDeathFix
+    internal class AllowPlayerDeathPatch
     {
         // ReSharper disable once UnusedMember.Local
         private static bool Prefix(ref PlayerControllerB __instance, ref bool __result)
         {
             if (__instance.isPlayerDead || !__instance.isPlayerControlled)
                 return __result = false;
+            if (Instance.AllowDeathInOrbit && isExploding)
+                return (__result = true) && false;
             return true;
         }
     }
